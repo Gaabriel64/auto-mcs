@@ -9,6 +9,7 @@ on:
       - ".github/workflows/compiler.yml"
       - "other/macos-dmg/**"
       - "appveyor.yml"
+  workflow_dispatch:
 jobs:
 
   # Setup and test variables from the code
