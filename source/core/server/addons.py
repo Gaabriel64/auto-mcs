@@ -292,31 +292,56 @@ class AddonManager():
         self._refresh_addons()
 
     # Enables/Disables installed addons
-    def addon_state(self, addon: AddonFileObject, enabled=True):
+    def addon_state(self, addon, enabled=True):
         if not self._addons_supported:
             return None
-
-        success = addon_state(addon, self._server, enabled)
+    
+        # 1. Object resolution
+        addon_obj = None
+        if isinstance(addon, (str, dict)):
+            search_key = addon if isinstance(addon, str) else (addon.get('name') or addon.get('id'))
+            addon_obj = self.get_addon(search_key) if search_key else None
+        else:
+            addon_obj = addon
+    
+        # 2. Validation
+        if not addon_obj or not hasattr(addon_obj, 'path'):
+            self._send_log(f"Unable to find or identify the addon : {addon}", 'error')
+            return False
+    
+        # 3. Action
+        success = addon_state(addon_obj, self._server, enabled)
         self._refresh_addons()
-
         return bool(success)
 
     # Deletes addon
-    def delete_addon(self, addon: AddonFileObject):
+    def delete_addon(self, addon):
         if not self._addons_supported:
             return None
 
+        # 1. Object resolution (Extract logic)
+        addon_obj = None
+        if isinstance(addon, (str, dict)):
+            search_key = addon if isinstance(addon, str) else (addon.get('name') or addon.get('id'))
+            addon_obj = self.get_addon(search_key) if search_key else None
+        else:
+            addon_obj = addon
+
+        # 2. Validation
+        if not addon_obj or not hasattr(addon_obj, 'path'):
+            self._send_log(f"Unable to find or identify the addon : {addon}", 'error')
+            return False
+
+        # 3. Action
         try:
-            os.remove(addon.path)
-            removed = True
-            self._send_log(f"successfully deleted '{addon}'", 'info')
-
+            os.remove(addon_obj.path)
+            self._send_log(f"successfully deleted '{addon_obj}'", 'info')
+            self._refresh_addons()
+            return True
         except OSError as e:
-            removed = False
-            self._send_log(f"failed to delete '{addon}': {constants.format_traceback(e)}", 'error')
-
-        self._refresh_addons()
-        return removed
+            self._send_log(f"failed to delete '{addon_obj}': {constants.format_traceback(e)}", 'error')
+            self._refresh_addons()
+            return False
 
     # Retrieves AddonFileObject or AddonWebObject by name
     def get_addon(self, addon_name: str, online=False):
