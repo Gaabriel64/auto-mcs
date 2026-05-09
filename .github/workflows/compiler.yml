@@ -1,14 +1,6 @@
 ---
 name: Compiler
 on:
-  push:
-    paths:
-      - "source/**"
-      - "build-tools/**"
-      - "docker/**"
-      - ".github/workflows/compiler.yml"
-      - "other/macos-dmg/**"
-      - "appveyor.yml"
   workflow_dispatch:
 jobs:
 
